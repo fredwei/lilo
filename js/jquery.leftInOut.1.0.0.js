@@ -1,3 +1,8 @@
+// made in fred,2014.04.24,shenzhen
+// my website http://3.fredweb.duapp.com/
+// this plug in git https://github.com/fredwei/lilo
+// you can contact me email 250095176@163.com or QQ 250095176 , Best can speak Chinese
+
 ;(function($){
 	$.fn.leftinout = function(options){
 
@@ -20,34 +25,23 @@
 	};
 
 	//自动播放
-	var auto_play = function(){
-		if(!opts.AutoPlay)
-		{
-			return false;
-		}
+	var timer = null;
+	$.fn.leftinout.auto_play = function(obj,opts){
 
+	   var depaytime = opts.AutoDelay + opts.SwitchTime + opts.AutoTime;
 
-		var obj,opts,nextto = obj.find('.slide-ex li.active').index() + 1;
-			thislen = obj.find('.slide-ex li').length - 1;
+	   clearTimeout(timer);
 
-		if(nextto < 0)
-		{
-			nextto = thislen;
-		}
+		timer = setTimeout(function(){
 
-		if(nextto > thislen)
-		{
-			nextto = 0;
-		}
+			//背景切换
+			$.fn.leftinout.background_prev_next(obj,true,opts);
+			//内容切换
+			$.fn.leftinout.switch_prev_next(obj,true,opts);
 
+			$.fn.leftinout.auto_play(obj,opts);
 
-		//背景切换
-		$.fn.leftinout.background_prev_next(obj,true,opts.SwitchTime,nextto);
-
-		//内容切换
-		$.fn.leftinout.switch_prev_next(obj,true,opts.SwitchTime,nextto);
-
-		//setTimeout('auto_play()',opts.AutoTime);
+		},depaytime);
 	};
 
 	//添加圆点按钮
@@ -58,8 +52,9 @@
 			return false;
 		}
 
-		var str = '<dl class="slide-dot">',
-			mlen = obj.find('.slide-ex li img').length + 1;
+		var $objli = obj.find('li'),
+			str = '<dl class="slide-dot">',
+			mlen = $objli.length + 1;
 
 		for(var i = 1 ; i < mlen ; i++)
 		{
@@ -73,8 +68,12 @@
 		obj.find('.slide-dot dd').eq(opts.StartInex).addClass('active');
 
 		//添加点击事件
-		obj.on('click','.slide-dot dd',function(){
-			if(obj.find('.slide-ex li img').is(":animated") || $(this).hasClass('active'))
+		obj.on('click mouseenter mouseleave','.slide-dot dd',function(){
+
+			//判断是否停止播放
+			pauseorplay(obj,opts,event.type);
+
+			if($objli.find('img').is(":animated") || $(this).hasClass('active') || event.type != 'click')
 			{
 				return false;
 			}
@@ -82,10 +81,10 @@
 			var thisindex = $(this).index();
 
 			//背景切换
-			$.fn.leftinout.background_prev_next(obj,false,opts.SwitchTime,thisindex);
+			$.fn.leftinout.background_prev_next(obj,false,opts,thisindex);
 
 			//内容切换
-			$.fn.leftinout.switch_prev_next(obj,false,opts.SwitchTime,thisindex);
+			$.fn.leftinout.switch_prev_next(obj,false,opts,thisindex);
 		});
 	};
 
@@ -101,8 +100,12 @@
 		obj.append(str.join(''));
 
 		//添加点击事件
-		obj.on('click',pobj,function(){
-			if(obj.find('.slide-ex li img').is(":animated"))
+		obj.on('click mouseenter mouseleave',pobj,function(event){
+
+			//判断是否停止播放
+			pauseorplay(obj,opts,event.type);
+
+			if(obj.find('li img').is(":animated") || event.type != 'click')
 			{
 				return false;
 			}
@@ -116,51 +119,102 @@
 			}
 
 			//背景切换
-			$.fn.leftinout.background_prev_next(obj,click_next,opts.SwitchTime);
+			$.fn.leftinout.background_prev_next(obj,click_next,opts);
 
 			//内容切换
-			$.fn.leftinout.switch_prev_next(obj,click_next,opts.SwitchTime);
+			$.fn.leftinout.switch_prev_next(obj,click_next,opts);
 		});
 
 	};
 
 	//背景左右切换
-	$.fn.leftinout.background_prev_next = function(obj,r,bgtime,ifdot){
-		var $bimg = obj.find('.slide-bg img'),
-			thisnum = $bimg.parent().find('.active').index(),
-			thislen = $bimg.length - 1,
+	$.fn.leftinout.background_prev_next = function(obj,r,opts,ifdot){
+		var $bli = obj.find('li'),
+			thisnum = $bli.parent().find('li.active').index(),
 			nextindex = thisnum - 1;
 
-		if(r)
-		{
-			nextindex = thisnum + 1;
-		}
+		//判断prev、next、dot
+		nextindex = ifpnd(obj,r,ifdot,thisnum);
 
-		if(nextindex < 0)
-		{
-			nextindex = thislen;
-		}
-
-		if(nextindex > thislen)
-		{
-			nextindex = 0;
-		}
-
-		//如果是圆点
-		if(ifdot != null)
-		{
-			nextindex = ifdot;
-		}
-
-		$bimg.eq(thisnum).fadeOut(bgtime).removeClass('active');
-		$bimg.eq(nextindex).fadeIn(bgtime).addClass('active');
+		$bli.eq(thisnum).find('.slide-bg img').fadeOut(opts.SwitchTime).removeClass('active');
+		$bli.eq(nextindex).find('.slide-bg img').fadeIn(opts.SwitchTime).addClass('active');
 
 	};
 
 	//内容左进左出左右切换
-	$.fn.leftinout.switch_prev_next = function(obj,r,bgtime,ifdot){
-		var $objli = obj.find('.slide-ex li'),
-			thisnum = $objli.parent().find('.active').index(),
+	$.fn.leftinout.switch_prev_next = function(obj,r,opts,ifdot){
+		var $objli = obj.find('li'),
+			thisnum = $objli.parent().find('li.active').index(),
+			nextindex = 0;
+
+		//判断prev、next、dot
+		nextindex = ifpnd(obj,r,ifdot,thisnum);
+
+		obj.find('.slide-dot dd').removeClass('active').eq(nextindex).addClass('active');
+
+		var imgW = $objli.eq(nextindex).find('.slide-img').width(),
+			swidth = obj.width()*0.5;
+			imgW = swidth - imgW*1.05;
+
+		$objli.eq(thisnum).find('.slide-img,.slide-txt').animate({
+			left:'-100%'
+		},opts.SwitchTime,function(){
+
+			$objli.removeClass('active').eq(nextindex).addClass('active').find('.slide-img').animate({
+				left:imgW
+			},opts.SwitchTime,opts.Aneasing);
+
+			$objli.eq(nextindex).find('.slide-txt').animate({
+				left:swidth + 50
+			},opts.SwitchTime,opts.Aneasing);
+
+		});
+
+	};
+
+	//元素初始化
+	$.fn.leftinout.slide_load = function(obj,opts){
+
+		slide_ex_img(obj,opts);
+		obj.find('.slide-bg img').eq(opts.StartInex).addClass('active').show();
+
+
+		if(opts.AutoPlay)
+		{
+			//自动播放
+			$.fn.leftinout.auto_play(obj,opts);
+		}
+
+		obj.on('click mouseenter mouseleave','li .slide-txt',function(event){
+			//判断是否停止播放
+			pauseorplay(obj,opts,event.type);
+		});
+
+	};
+
+	//小图的位置
+	function slide_ex_img(obj,opts){
+		var swidth = obj.width()*0.5,
+			sheight = obj.height()*0.5,
+			$objli = obj.find('li'),
+			imgW = $objli.eq(opts.StartInex).find('.slide-img img').width();
+
+		$objli.eq(opts.StartInex).addClass('active');
+
+		imgW = swidth - imgW*1.05;
+
+		$objli.eq(opts.StartInex).find('.slide-img').css({
+			'left' : imgW
+		}).parent().find('.slide-txt').css({
+			'left' : swidth + 50
+		});
+
+	};
+
+
+	//判断prev或next或dot
+	function ifpnd(obj,r,ifdot,thisnum){
+		var $objli = obj.find('li'),
 			thislen = $objli.length - 1,
 			nextindex = thisnum - 1;
 
@@ -185,64 +239,23 @@
 			nextindex = ifdot;
 		}
 
-		obj.find('.slide-dot dd').removeClass('active').eq(nextindex).addClass('active');
-
-		var imgW = $objli.eq(nextindex).find('img').width(),
-			swidth = obj.width()*0.5;
-			imgW = swidth - imgW*1.05;
-
-		$objli.eq(thisnum).find('img').animate({
-			left:'-100%'
-		},bgtime,function(){
-			$(this).parent().removeClass('active');
-
-			$objli.eq(nextindex).addClass('active').find('img').animate({
-				left:imgW
-			});
-		});
-
-		$objli.eq(thisnum).find('.txt').animate({
-			left:'-100%'
-		},bgtime,function(){
-			$(this).parent().removeClass('active');
-
-			$objli.eq(nextindex).addClass('active').find('.txt').animate({
-				left:swidth
-			});
-		});
-
+		return nextindex;
 	};
 
+	//判断是否停止自动播放
+	function pauseorplay(obj,opts,s){
 
-	//元素初始化
-	$.fn.leftinout.slide_load = function(obj,opts){
-		slide_ex_img(obj,opts);
-		obj.find('.slide-bg img').eq(opts.StartInex).addClass('active').show();
-
-		//自动播放
-		auto_play();
+		if(s == 'click' || s == 'mouseenter' || !opts.AutoPlay)
+		{
+			clearTimeout(timer);
+		}
+		else
+		{
+			//自动播放
+			$.fn.leftinout.auto_play(obj,opts);
+		}
 	};
 
-	//小图的位置
-	function slide_ex_img(obj,opts){
-		var swidth = obj.width()*0.5,
-			sheight = obj.height()*0.5,
-			$objli = obj.find('.slide-ex li'),
-			imgW = $objli.eq(opts.StartInex).find('img').width();
-
-		$objli.eq(opts.StartInex).addClass('active');
-
-		imgW = swidth - imgW*1.05;
-		//alert(obj.find('.slide-ex li.active').index());
-
-		$objli.eq(opts.StartInex).find('img').css({
-			'left' : imgW
-		}).parent().find('.txt').css({
-			'left' : swidth
-		});
-
-
-	};
 
 	//默认值
 	$.fn.leftinout.defaults = {
@@ -252,11 +265,29 @@
 		SwitchTime : 800,
 		Dot : true,
 		AutoPlay : true,
-		AutoTime : 1000
+		AutoTime : 1000,
+		AutoDelay : 2000,
+		Aneasing : 'easeOutQuart'
 	};
 
 })(jQuery);
 
+
+jQuery.easing['jswing'] = jQuery.easing['swing'];
+jQuery.extend( jQuery.easing,
+{
+	def: 'easeOutQuad',
+	swing: function (x, t, b, c, d) {
+		//alert(jQuery.easing.default);
+		return jQuery.easing[jQuery.easing.def](x, t, b, c, d);
+	},
+	easeOutQuad: function (x, t, b, c, d) {
+		return -c *(t/=d)*(t-2) + b;
+	},
+	easeOutQuart: function (x, t, b, c, d) {
+		return -c * ((t=t/d-1)*t*t*t - 1) + b;
+	}
+});
 
 
 
