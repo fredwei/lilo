@@ -1,7 +1,5 @@
-// made in fred,2014.04.24,shenzhen
-// my website http://3.fredweb.duapp.com/
-// this plug in git https://github.com/fredwei/lilo
-// you can contact me email 250095176@163.com or QQ 250095176 , Best can speak Chinese
+// made by fred, 2014.04.24, shenzhen
+// you can contact me with email 250095176@163.com or QQ 250095176, the best is you can speak with Chinese
 
 ;(function($){
 	$.fn.leftinout = function(options){
